@@ -2,10 +2,10 @@ name: OWASP ZAP Baseline Security Scan
 
 on:
   push:
-    branches: [master, main]
+    branches: [main, master]
   pull_request:
-    branches: [master, main]
-  workflow_dispatch:
+    branches: [main, master]
+  workflow_dispatch:  # Allows manual trigger
 
 permissions:
   contents: read
@@ -43,6 +43,8 @@ jobs:
       - name: Run Application Container
         run: |
           echo "Starting application container..."
+          # Use --network host so ZAP can access localhost:5000
+          # Or map to both 3000 and 5000 for compatibility
           docker run -d \
             --network host \
             --name cicd-demo-app \
@@ -50,6 +52,7 @@ jobs:
           
           echo "Container started, waiting for application to be ready..."
           
+          # Wait for application on port 3000 (the actual port)
           timeout 90 bash -c 'until curl -f http://localhost:3000/health 2>/dev/null || curl -f http://localhost:3000/ 2>/dev/null; do 
             echo "Waiting for application to start..."
             sleep 3
@@ -57,25 +60,25 @@ jobs:
           
           echo "Application is ready!"
           
+          # Test endpoints
           echo "Testing endpoints..."
-          curl -s http://localhost:3000/nations | head -n 5 || echo "Nations endpoint"
+          curl -s http://localhost:3000/nations | head -n 5 || echo "Nations endpoint test"
           echo ""
-          curl -s http://localhost:3000/currencies | head -n 5 || echo "Currencies endpoint"
+          curl -s http://localhost:3000/currencies | head -n 5 || echo "Currencies endpoint test"
 
       - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.11.0
         with:
-          target: 'http://localhost:3000'
+          target: 'http://localhost:3000'  # Changed from 5000 to 3000
           rules_file_name: '.zap/rules.tsv'
+          artifact_name: 'zap-scan'
           cmd_options: '-a'
-          # DO NOT include artifact_name parameter
-          # Let the action create reports without uploading
 
-      - name: Upload ZAP Reports as Artifacts
+      - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: zap-baseline-reports
+          name: zap-scan-report  # Different name to avoid conflict
           path: |
             report_html.html
             report_json.json
@@ -89,5 +92,3 @@ jobs:
           docker stop cicd-demo-app || true
           docker rm cicd-demo-app || true
           echo "Cleanup completed"
-
-          
