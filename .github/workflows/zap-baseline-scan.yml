@@ -74,6 +74,11 @@ jobs:
         with:
           target: 'http://localhost:5000'
           rules_file_name: '.zap/rules.tsv'
+          # Some GitHub/Azure-hosted runners do not accept artifact names with
+          # underscores. The action's default artifact name is `zap_scan` which
+          # can fail when creating the artifact container. Override it here to
+          # use a hyphen (allowed) and match the later upload step.
+          artifact_name: 'zap-scan'
           cmd_options: '-a'  # Include the alpha active and passive scan rules
           
       - name: Upload ZAP Report
