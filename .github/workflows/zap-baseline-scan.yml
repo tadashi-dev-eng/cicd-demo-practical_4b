@@ -80,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()  # Upload even if scan finds issues
         with:
-          name: zap-baseline-report
+          name: zap-scan
           path: |
             report_html.html
             report_json.json
