@@ -1,0 +1,83 @@
+name: OWASP ZAP Baseline Security Scan
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  zap-baseline-scan:
+    name: ZAP Baseline Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Application with Maven
+        run: |
+          echo "Building application..."
+          mvn clean package -DskipTests
+          echo "Build completed successfully"
+
+      - name: Build Docker Image
+        run: |
+          echo "Building Docker image..."
+          docker build -t cicd-demo:test .
+          echo "Docker image built successfully"
+          docker images | grep cicd-demo
+
+      - name: Run Application Container
+        run: |
+          echo "Starting application container..."
+          docker run -d -p 5000:5000 --name cicd-demo-app cicd-demo:test
+          echo "Container started, waiting for application to be ready..."
+          
+          # Wait for application to be ready (max 90 seconds)
+          timeout 90 bash -c 'until curl -f http://localhost:5000/health 2>/dev/null || curl -f http://localhost:5000/ 2>/dev/null; do 
+            echo "Waiting for application to start..."
+            sleep 3
+          done'
+          
+          echo "Application is ready!"
+          
+          # Test endpoints
+          echo "Testing endpoints..."
+          curl -s http://localhost:5000/nations | head -n 5
+          echo ""
+          curl -s http://localhost:5000/currencies | head -n 5
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:5000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'  # Include the alpha active and passive scan rules
+          
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload even if scan finds issues
+        with:
+          name: zap-baseline-report
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
+          retention-days: 30
+
+      - name: Stop and Remove Application Container
+        if: always()  # Always cleanup
+        run: |
+          echo "Stopping application container..."
+          docker stop cicd-demo-app || true
+          docker rm cicd-demo-app || true
+          echo "Cleanup completed"
