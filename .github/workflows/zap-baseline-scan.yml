@@ -39,7 +39,9 @@ jobs:
       - name: Run Application Container
         run: |
           echo "Starting application container..."
-          docker run -d -p 5000:5000 --name cicd-demo-app cicd-demo:test
+          # The application listens on port 3000 (see src/main/resources/application.properties).
+          # Map host port 5000 to container port 3000 so the workflow can target http://localhost:5000
+          docker run -d -p 5000:3000 --name cicd-demo-app cicd-demo:test
           echo "Container started, waiting for application to be ready..."
           
           # Wait for application to be ready (max 90 seconds)
