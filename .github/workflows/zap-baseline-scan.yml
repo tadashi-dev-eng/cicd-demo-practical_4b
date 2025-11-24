@@ -7,7 +7,6 @@ on:
     branches: [master, main]
   workflow_dispatch:  # Allows manual trigger
 
-# Allow the action to create issues when it needs to report findings.
 permissions:
   contents: read
   issues: write
@@ -41,22 +40,20 @@ jobs:
           echo "Docker image built successfully"
           docker images | grep cicd-demo
 
-      - name: Make workspace writable for ZAP container
-        # ZAP runs inside a container and mounts the repo workspace. Ensure the container can write reports.
-        run: |
-          echo "Adjusting workspace permissions for ZAP"
-          sudo chmod -R a+rw "$GITHUB_WORKSPACE" || true
-
       - name: Run Application Container
         run: |
           echo "Starting application container..."
-          # The application listens on port 3000 (see src/main/resources/application.properties).
-          # Map host port 5000 to container port 3000 so the workflow can target http://localhost:5000
-          docker run -d -p 5000:3000 --name cicd-demo-app cicd-demo:test
+          # Use --network host so ZAP can access localhost:5000
+          # Or map to both 3000 and 5000 for compatibility
+          docker run -d \
+            --network host \
+            --name cicd-demo-app \
+            cicd-demo:test
+          
           echo "Container started, waiting for application to be ready..."
           
-          # Wait for application to be ready (max 90 seconds)
-          timeout 90 bash -c 'until curl -f http://localhost:5000/health 2>/dev/null || curl -f http://localhost:5000/ 2>/dev/null; do 
+          # Wait for application on port 3000 (the actual port)
+          timeout 90 bash -c 'until curl -f http://localhost:3000/health 2>/dev/null || curl -f http://localhost:3000/ 2>/dev/null; do 
             echo "Waiting for application to start..."
             sleep 3
           done'
@@ -65,27 +62,23 @@ jobs:
           
           # Test endpoints
           echo "Testing endpoints..."
-          curl -s http://localhost:5000/nations | head -n 5
+          curl -s http://localhost:3000/nations | head -n 5 || echo "Nations endpoint test"
           echo ""
-          curl -s http://localhost:5000/currencies | head -n 5
+          curl -s http://localhost:3000/currencies | head -n 5 || echo "Currencies endpoint test"
 
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: 'http://localhost:5000'
+          target: 'http://localhost:3000'  # Changed from 5000 to 3000
           rules_file_name: '.zap/rules.tsv'
-          # Some GitHub/Azure-hosted runners do not accept artifact names with
-          # underscores. The action's default artifact name is `zap_scan` which
-          # can fail when creating the artifact container. Override it here to
-          # use a hyphen (allowed) and match the later upload step.
           artifact_name: 'zap-scan'
-          cmd_options: '-a'  # Include the alpha active and passive scan rules
-          
+          cmd_options: '-a'
+
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
-        if: always()  # Upload even if scan finds issues
+        if: always()
         with:
-          name: zap-scan
+          name: zap-scan-report  # Different name to avoid conflict
           path: |
             report_html.html
             report_json.json
@@ -93,7 +86,7 @@ jobs:
           retention-days: 30
 
       - name: Stop and Remove Application Container
-        if: always()  # Always cleanup
+        if: always()
         run: |
           echo "Stopping application container..."
           docker stop cicd-demo-app || true
