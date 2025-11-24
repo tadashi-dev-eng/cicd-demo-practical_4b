@@ -7,6 +7,11 @@ on:
     branches: [master, main]
   workflow_dispatch:  # Allows manual trigger
 
+# Allow the action to create issues when it needs to report findings.
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   zap-baseline-scan:
     name: ZAP Baseline Security Scan
@@ -35,6 +40,12 @@ jobs:
           docker build -t cicd-demo:test .
           echo "Docker image built successfully"
           docker images | grep cicd-demo
+
+      - name: Make workspace writable for ZAP container
+        # ZAP runs inside a container and mounts the repo workspace. Ensure the container can write reports.
+        run: |
+          echo "Adjusting workspace permissions for ZAP"
+          sudo chmod -R a+rw "$GITHUB_WORKSPACE" || true
 
       - name: Run Application Container
         run: |
