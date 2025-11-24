@@ -1,5 +1,7 @@
 # Use a Java base image
-FROM openjdk:17-oracle
+# NOTE: `openjdk:17-oracle` is not available on Docker Hub; use an official OpenJDK image.
+# Using `openjdk:17-jdk` which is the standard OpenJDK 17 image.
+FROM eclipse-temurin:17-jdk
 
 # https://medium.com/@skywalkerhunter/aws-docker-deploy-spring-boot-fe05a00191d9
 # added on 31st Oct
