@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    image: cicd-demo:test
+    ports:
+      - '3000:3000'
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    depends_on:
+      - app
+    entrypoint: ["zap-baseline.py", "-t", "http://app:3000", "-r", "/zap/wrk/report_html.html"]
+    volumes:
+      - .:/zap/wrk

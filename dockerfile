@@ -21,7 +21,7 @@ COPY target/cicd-demo-0.0.1-SNAPSHOT.jar /app/cicd-demo-0.0.1-SNAPSHOT.jar
 #COPY target/cicd-demo-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/cicd-demo-0.0.1-SNAPSHOT.war
 
 # Set environment variables
-#ENV SERVER_PORT=5000
+#ENV SERVER_PORT=3000
 # ENV LOGGING_LEVEL=INFO
 
 # Expose the port that the Spring Boot application is listening on

@@ -1,0 +1,59 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "OWASP ZAP",
+          "version": "2.14.0",
+          "informationUri": "https://www.zaproxy.org/",
+          "rules": [
+            {
+              "id": "40018",
+              "name": "SQL Injection",
+              "shortDescription": {
+                "text": "SQL Injection"
+              },
+              "fullDescription": {
+                "text": "SQL injection vulnerability"
+              },
+              "helpUri": "https://owasp.org/",
+              "properties": {
+                "tags": [
+                  "owasp",
+                  "zap",
+                  "HIGH"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "40018",
+          "level": "error",
+          "message": {
+            "text": "SQL Injection\nEvidence: syntax error"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://localhost:3000/api/user?id=1"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "confidence": "HIGH",
+            "riskcode": "3",
+            "param": "id",
+            "solution": "Use prepared statements"
+          }
+        }
+      ]
+    }
+  ]
+}

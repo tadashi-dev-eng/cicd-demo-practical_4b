@@ -1,0 +1,1 @@
+{"site": [{"@host": "localhost:3000", "@name": "http://localhost:3000", "alerts": [{"pluginid": 40018, "alert": "SQL Injection", "riskcode": "3", "confidence": "HIGH", "url": "http://localhost:3000/api/user?id=1", "param": "id", "evidence": "syntax error", "description": "SQL injection vulnerability", "solution": "Use prepared statements", "reference": "https://owasp.org/"}]}]}

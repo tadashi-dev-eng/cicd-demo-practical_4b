@@ -1,0 +1,83 @@
+name: ZAP API Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  zap-api-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build and run app
+        run: |
+          mvn clean package -DskipTests
+          docker build -t cicd-demo:test .
+          docker run -d -p 3000:3000 --name app cicd-demo:test
+          timeout 60 bash -c 'until curl -f http://localhost:3000/; do sleep 2; done'
+
+      - name: Download OpenAPI spec
+        run: curl -f http://localhost:3000/v3/api-docs > openapi.json
+
+      - name: Run ZAP API Scan
+        run: |
+          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable \
+            zap-api-scan.py -t http://localhost:3000 -f openapi -d openapi.json -r api_report.html -J api_report.json
+
+      - name: Convert ZAP JSON to SARIF
+        run: |
+          python3 scripts/convert-zap-to-sarif.py api_report.json api_report.sarif || true
+
+      - name: Install Node and Puppeteer
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Puppeteer
+        run: |
+          npm install puppeteer --no-audit --no-fund
+
+      - name: Screenshot the API report
+        run: |
+          node scripts/screenshot_report.js api_report.html api_report.png || true
+
+      - name: Upload API reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-api-reports
+          path: |
+            api_report.html
+            api_report.json
+            api_report.sarif
+            api_report.png
+
+      - name: Fail on High Severity Findings
+        if: always()
+        run: |
+          HIGH_ALERTS=$(jq '[.site[].alerts[] | select(.riskcode=="3")] | length' api_report.json || echo 0)
+          echo "High alerts: $HIGH_ALERTS"
+          if [ "$HIGH_ALERTS" -gt 0 ]; then
+            echo "High risk vulnerabilities found: $HIGH_ALERTS"
+            exit 1
+          fi
+
+      - name: Upload API reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-api-reports
+          path: |
+            api_report.html
+            api_report.json
+
+      - name: Cleanup
+        if: always()
+        run: docker stop app && docker rm app

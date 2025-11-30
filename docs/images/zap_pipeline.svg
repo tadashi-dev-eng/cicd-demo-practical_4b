@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300" viewBox="0 0 800 300">
+  <style>
+    .box { fill:#f5f7ff; stroke:#3b82f6; stroke-width:2; }
+    .text{ font-family: Arial, sans-serif; font-size:14px; fill:#1f2937; }
+    .title{ font-weight:bold; font-size:16px; }
+    .arrow{ stroke:#111827; stroke-width:2; }
+  </style>
+
+  <rect x="30" y="30" width="170" height="80" rx="6" class="box" />
+  <text x="115" y="60" text-anchor="middle" class="text title">Repo / Code</text>
+  <text x="115" y="80" text-anchor="middle" class="text">(Maven Spring Boot)</text>
+
+  <rect x="230" y="30" width="170" height="80" rx="6" class="box" />
+  <text x="315" y="55" text-anchor="middle" class="text title">CI Build</text>
+  <text x="315" y="75" text-anchor="middle" class="text">(Maven, Docker Build)</text>
+
+  <rect x="430" y="30" width="170" height="80" rx="6" class="box" />
+  <text x="515" y="55" text-anchor="middle" class="text title">Runtime</text>
+  <text x="515" y="75" text-anchor="middle" class="text">(Docker Container: container port 3000)</text>
+
+  <rect x="220" y="140" width="170" height="80" rx="6" class="box" />
+  <text x="305" y="170" text-anchor="middle" class="text title">DAST (ZAP)</text>
+  <text x="305" y="190" text-anchor="middle" class="text">Baseline / Full / API Scan</text>
+
+  <rect x="430" y="140" width="170" height="80" rx="6" class="box" />
+  <text x="515" y="170" text-anchor="middle" class="text title">Reports</text>
+  <text x="515" y="190" text-anchor="middle" class="text">HTML / JSON / SARIF</text>
+
+  <line x1="200" y1="70" x2="230" y2="70" class="arrow" marker-end="url(#arrowhead)" />
+  <line x1="400" y1="70" x2="430" y2="70" class="arrow" marker-end="url(#arrowhead)" />
+  <line x1="315" y1="110" x2="315" y2="140" class="arrow" marker-end="url(#arrowhead)" />
+  <line x1="390" y1="180" x2="430" y2="180" class="arrow" marker-end="url(#arrowhead)" />
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#111827" />
+    </marker>
+  </defs>
+</svg>
