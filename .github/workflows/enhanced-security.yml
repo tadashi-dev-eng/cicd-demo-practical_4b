@@ -7,30 +7,45 @@ on:
     branches: ["master", "main"]
   pull_request:
     branches: ["master", "main"]
+
+jobs:
+  security:
+    name: Security Scans (SAST/DAST/Dependencies)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      matrix:
+        scan-type: [dependencies, code, dast]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Run Snyk Dependency Scan
         if: matrix.scan-type == 'dependencies'
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           echo "🔍 Running Snyk dependency scan..."
-          # Try the action first
-          if ! snyk test --maven --severity-threshold=medium --sarif-file-output=snyk-dependencies.sarif; then
-            echo "⚠️ Snyk test failed or found vulnerabilities, but continuing to generate SARIF"
-            # Ensure SARIF file is generated even if vulnerabilities are found
-            snyk test --maven --severity-threshold=medium --sarif-file-output=snyk-dependencies.sarif || true
+          if ! snyk test --all-projects --severity-threshold=medium --sarif-file-output=snyk-dependencies.sarif; then
+            snyk test --all-projects --severity-threshold=medium --sarif-file-output=snyk-dependencies.sarif || true
           fi
 
       - name: Run Snyk Code Security Scan (SAST)
         if: matrix.scan-type == 'code'
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           echo "🔍 Running Snyk code scan..."
-          # Try the code scan
           if ! snyk code test --severity-threshold=high --sarif-file-output=snyk-code.sarif; then
-            echo "⚠️ Snyk code test failed or found vulnerabilities, but continuing to generate SARIF"
-            # Ensure SARIF file is generated even if vulnerabilities are found
             snyk code test --severity-threshold=high --sarif-file-output=snyk-code.sarif || true
           fi
 
@@ -40,12 +55,8 @@ on:
           SARIF_FILE="snyk-${{ matrix.scan-type }}.sarif"
           if [ -f "$SARIF_FILE" ]; then
             echo "sarif-exists=true" >> $GITHUB_OUTPUT
-            echo "✅ SARIF file found: $SARIF_FILE"
           else
             echo "sarif-exists=false" >> $GITHUB_OUTPUT
-            echo "❌ SARIF file not found: $SARIF_FILE"
-            echo "Available files:"
-            ls -la *.sarif 2>/dev/null || echo "No SARIF files found"
           fi
 
       - name: Upload SARIF results to GitHub Security
@@ -63,7 +74,6 @@ on:
           path: snyk-${{ matrix.scan-type }}.sarif
           retention-days: 30
 
-      # DAST scan (only when the matrix value is 'dast')
       - name: DAST - Build and run app
         if: matrix.scan-type == 'dast'
         run: |
@@ -97,12 +107,15 @@ on:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+
       - name: DAST - Install Puppeteer
         if: matrix.scan-type == 'dast'
         run: npm install puppeteer --no-audit --no-fund
+
       - name: DAST - Take screenshot of HTML report
         if: matrix.scan-type == 'dast'
         run: node scripts/screenshot_report.js report_html.html zap_report.png || true
+
       - name: DAST - Upload reports
         if: matrix.scan-type == 'dast'
         uses: actions/upload-artifact@v4
@@ -113,6 +126,7 @@ on:
             report_json.json
             zap_report.sarif
             zap_report.png
+
       - name: DAST - Fail on High Severity Findings
         if: matrix.scan-type == 'dast'
         run: |

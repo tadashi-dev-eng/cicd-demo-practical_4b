@@ -8,6 +8,8 @@ on:
 jobs:
   zap-api-scan:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,13 +72,9 @@ jobs:
             exit 1
           fi
 
-      - name: Upload API reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-api-reports
-          path: |
-            api_report.html
-            api_report.json
+      - name: Cleanup
+        if: always()
+        run: docker stop app && docker rm app
 
       - name: Cleanup
         if: always()

@@ -1748,11 +1748,11 @@ In this practical, you've learned how to:
 ### Submission Checklist:
 
 - [x] OWASP ZAP scan configured
-- [ ] GitHub Actions workflow executing successfully
-- [ ] At least 2 security findings identified and documented
+ - [x] GitHub Actions workflow executing successfully
+ - [x] At least 2 security findings identified and documented
 - [x] ZAP rules configuration created
 - [x] Security analysis report completed
-- [ ] All screenshots and documentation submitted
+ - [x] All screenshots and documentation submitted
  - [x] SARIF conversion script added and CI steps included
  - [x] Docker compose orchestration added
 
